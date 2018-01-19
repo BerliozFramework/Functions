@@ -1,4 +1,4 @@
-# Functions
+# Berlioz Utils
 Additional functions for PHP to help you in development.
 
 ## Dates ##

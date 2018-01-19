@@ -1,5 +1,5 @@
 {
-  "name": "berlioz/functions",
+  "name": "berlioz/utils",
   "description": "Additional functions for PHP",
   "minimum-stability": "stable",
   "license": "MIT",
@@ -11,9 +11,17 @@
     }
   ],
   "autoload": {
+    "psr-4": {
+      "Berlioz\\Utils\\": "src/"
+    },
     "files": [
       "src/functions.php"
     ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Berlioz\\Utils\\Tests\\": "tests/"
+    }
   },
   "require": {
     "php": ">=7.1"
