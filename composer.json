@@ -1,0 +1,24 @@
+{
+  "name": "berlioz/functions",
+  "description": "Additional functions for PHP",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "homepage": "http://www.berlioz-framework.com",
+  "authors": [
+    {
+      "name": "Ronan Giron",
+      "email": "ronan.giron@berlioz-framework.com"
+    }
+  ],
+  "autoload": {
+    "files": [
+      "src/functions.php"
+    ]
+  },
+  "require": {
+    "php": ">=7.1"
+  },
+  "suggest": {
+    "ext-gd": "Needed to have additional functions to manipulate images"
+  }
+}
