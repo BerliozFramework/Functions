@@ -757,57 +757,45 @@ function b_nl2p(string $str): string
  */
 function b_property_get($object, string $property, &$exists = null)
 {
+    $exists = false;
+
     if (is_object($object)) {
+        $reflectionObject = new ReflectionObject($object);
+
         // If property is public
-        if (isset($object->$property)) {
-            $exists = true;
-
+        if ($exists = ($reflectionObject->hasProperty($property) && $reflectionObject->getProperty($property)->isPublic())) {
             return $object->$property;
-        } else {
-            // Format Camel Case : getMyProperty(...) | isMyProperty(...)
-            $getterCamelCase = preg_replace_callback(
-                '/(?:^|_)(.?)/',
-                function ($matches) {
-                    return mb_strtoupper($matches[1]);
-                }, $property);
-
-            // Format : getMyProperty(...)
-            if (method_exists($object, 'get' . $getterCamelCase)) {
-                $exists = true;
-
-                return call_user_func([$object, 'get' . $getterCamelCase]);
-            } else {
-                // Format : isMyProperty(...)
-                if (method_exists($object, 'is' . $getterCamelCase)) {
-                    $exists = true;
-
-                    return call_user_func([$object, 'is' . $getterCamelCase]);
-                } else {
-                    // Format : get_myproperty(...)
-                    if (method_exists($object, 'get_' . $property)) {
-                        $exists = true;
-
-                        return call_user_func([$object, 'get_' . $property]);
-                    } else {
-                        // Format : is_myproperty(...)
-                        if (method_exists($object, 'is_' . $property)) {
-                            $exists = true;
-
-                            return call_user_func([$object, 'is_' . $property]);
-                        } else {
-                            $exists = false;
-
-                            return null;
-                        }
-                    }
-                }
-            }
         }
-    } else {
-        $exists = false;
 
-        return null;
+        // Format Camel Case : getMyProperty(...) | isMyProperty(...)
+        $getterCamelCase = preg_replace_callback(
+            '/(?:^|_)(.?)/',
+            function ($matches) {
+                return mb_strtoupper($matches[1]);
+            }, $property);
+
+        // Format : getMyProperty(...)
+        if ($exists = $reflectionObject->hasMethod('get' . $getterCamelCase)) {
+            return $reflectionObject->getMethod('get' . $getterCamelCase)->invoke($object);
+        }
+
+        // Format : isMyProperty(...)
+        if ($exists = $reflectionObject->hasMethod('is' . $getterCamelCase)) {
+            return $reflectionObject->getMethod('is' . $getterCamelCase)->invoke($object);
+        }
+
+        // Format : get_myproperty(...)
+        if ($exists = $reflectionObject->hasMethod('get_' . $property)) {
+            return $reflectionObject->getMethod('get_' . $property)->invoke($object);
+        }
+
+        // Format : is_myproperty(...)
+        if ($exists = $reflectionObject->hasMethod('is_' . $property)) {
+            return $reflectionObject->getMethod('is_' . $property)->invoke($object);
+        }
     }
+
+    return null;
 }
 
 /**
@@ -821,39 +809,40 @@ function b_property_get($object, string $property, &$exists = null)
  */
 function b_property_set($object, string $property, $value = null): bool
 {
-    $bReturn = true;
-
     if (is_object($object)) {
+        $reflectionObject = new ReflectionObject($object);
+
         // If property is public
-        if (isset($object->$property)) {
+        if ($bReturn = ($reflectionObject->hasProperty($property) && $reflectionObject->getProperty($property)->isPublic())) {
             $object->$property = $value;
-        } else {
-            // Format Camel Case : setMyProperty(...)
-            $setterCamelCase = 'set' .
-                               preg_replace_callback(
-                                   '/(?:^|_)(.?)/',
-                                   function ($matches) {
-                                       return mb_strtoupper($matches[1]);
-                                   }, $property);
 
-            if (method_exists($object, $setterCamelCase)) {
-                call_user_func([$object, $setterCamelCase], $value);
-            } else {
-                // Format : set_myproperty(...)
-                $setter = 'set_' . $property;
-
-                if (method_exists($object, $setter)) {
-                    call_user_func([$object, $setter], $value);
-                } else {
-                    $bReturn = false;
-                }
-            }
+            return true;
         }
-    } else {
-        $bReturn = false;
+
+        // Format Camel Case : setMyProperty(...)
+        $setterCamelCase = 'set' .
+                           preg_replace_callback(
+                               '/(?:^|_)(.?)/',
+                               function ($matches) {
+                                   return mb_strtoupper($matches[1]);
+                               }, $property);
+
+        // Format : setMyProperty(...)
+        if ($bReturn = $reflectionObject->hasMethod($setterCamelCase)) {
+            $reflectionObject->getMethod($setterCamelCase)->invoke($object, $value);
+
+            return true;
+        }
+
+        // Format : set_myproperty(...)
+        if ($bReturn = $reflectionObject->hasMethod('set_' . $property)) {
+            $reflectionObject->getMethod('set_' . $property)->invoke($object, $value);
+
+            return true;
+        }
     }
 
-    return $bReturn;
+    return false;
 }
 
 
