@@ -767,6 +767,13 @@ function b_property_get($object, string $property, &$exists = null)
             return $object->$property;
         }
 
+        // If magic methods __get() and __isset() are declared
+        if ($reflectionObject->hasMethod('__isset') && $reflectionObject->hasMethod('__get')) {
+            if ($exists = $object->__isset($property)) {
+                return $object->__get($property);
+            }
+        }
+
         // Format Camel Case : getMyProperty(...) | isMyProperty(...)
         $getterCamelCase = preg_replace_callback(
             '/(?:^|_)(.?)/',
@@ -817,6 +824,15 @@ function b_property_set($object, string $property, $value = null): bool
             $object->$property = $value;
 
             return true;
+        }
+
+        // If magic methods __set() and __isset() are declared
+        if ($reflectionObject->hasMethod('__isset') && $reflectionObject->hasMethod('__set')) {
+            if ($object->__isset($property)) {
+                $object->__set($property, $value);
+
+                return true;
+            }
         }
 
         // Format Camel Case : setMyProperty(...)
