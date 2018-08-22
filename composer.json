@@ -24,9 +24,10 @@
     }
   },
   "require": {
-    "php": ">=7.1"
-  },
-  "suggest": {
-    "ext-gd": "Needed to have additional functions to manipulate images"
+    "php": ">=7.1",
+    "ext-gd": "*",
+    "ext-iconv": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*"
   }
 }
