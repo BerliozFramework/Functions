@@ -29,7 +29,7 @@ Additional functions for PHP to help you in development.
 * `b_truncate(...)`: truncate string
 * `b_remove_entities(...)`: remove entities from string
 * `b_strtouri(...)`: treat string for url
-* `b_hazard_string(...)`: generate an hazard string
+* `b_random_string(...)`: generate an hazard string
 * `b_email_account(...)`: extract account part of email
 * `b_email_domain(...)`: extract domain of email
 * `b_nl2p(...)`: surrounds paragraphs with "P" HTML tag and inserts HTML line breaks before all newlines

@@ -598,7 +598,7 @@ function b_strtouri(string $str): string
 }
 
 /**
- * Generate an hazard string.
+ * Generate an random string.
  *
  * @param int  $length                    Length of string
  * @param bool $withNumber                String with numbers (default: true)
@@ -608,7 +608,7 @@ function b_strtouri(string $str): string
  *
  * @return string
  */
-function b_hazard_string(int $length = 12, bool $withNumber = true, bool $onlyLowerCase = false, bool $withSpecialCharacter = false, bool $needAllRequiredParameters = true): string
+function b_random_string(int $length = 12, bool $withNumber = true, bool $onlyLowerCase = false, bool $withSpecialCharacter = false, bool $needAllRequiredParameters = true): string
 {
     // Defaults
     $characters_lowercase = 'abcdefghkjmnopqrstuvwxyz';
@@ -774,31 +774,40 @@ function b_property_get($object, string $property, &$exists = null)
             }
         }
 
-        // Format Camel Case : getMyProperty(...) | isMyProperty(...)
-        $getterCamelCase = preg_replace_callback(
-            '/(?:^|_)(.?)/',
-            function ($matches) {
-                return mb_strtoupper($matches[1]);
-            }, $property);
+        // Format Snake/Camel Case : get_my_property(...) / getMyProperty(...) / isMyProperty(...)
+        $camelCase =
+            preg_replace_callback(
+                '/(?:^|_)(.?)/',
+                function ($matches) {
+                    return mb_strtoupper($matches[1]);
+                },
+                $property
+            );
+        $methods = [sprintf('get%s', $camelCase),
+                    sprintf('is%s', $camelCase),
+                    sprintf('get_%s', $property),
+                    sprintf('is_%s', $property)];
 
-        // Format : getMyProperty(...)
-        if ($exists = $reflectionObject->hasMethod('get' . $getterCamelCase)) {
-            return $reflectionObject->getMethod('get' . $getterCamelCase)->invoke($object);
+        // Test different formats
+        foreach ($methods as $method) {
+            if ($exists = ($reflectionObject->hasMethod($method) &&
+                           $reflectionObject->getMethod($method)->isPublic())) {
+                return $reflectionObject->getMethod($method)->invoke($object);
+            }
         }
 
-        // Format : isMyProperty(...)
-        if ($exists = $reflectionObject->hasMethod('is' . $getterCamelCase)) {
-            return $reflectionObject->getMethod('is' . $getterCamelCase)->invoke($object);
-        }
+        // Test __call() method
+        if ($reflectionObject->hasMethod('__call')) {
+            foreach ($methods as $method) {
+                try {
+                    $exists = true;
 
-        // Format : get_myproperty(...)
-        if ($exists = $reflectionObject->hasMethod('get_' . $property)) {
-            return $reflectionObject->getMethod('get_' . $property)->invoke($object);
-        }
-
-        // Format : is_myproperty(...)
-        if ($exists = $reflectionObject->hasMethod('is_' . $property)) {
-            return $reflectionObject->getMethod('is_' . $property)->invoke($object);
+                    return $reflectionObject->getMethod('__call')->invoke($object, $method);
+                } catch (\Error $e) {
+                } finally {
+                    $exists = false;
+                }
+            }
         }
     }
 
@@ -835,26 +844,38 @@ function b_property_set($object, string $property, $value = null): bool
             }
         }
 
-        // Format Camel Case : setMyProperty(...)
-        $setterCamelCase = 'set' .
-                           preg_replace_callback(
-                               '/(?:^|_)(.?)/',
-                               function ($matches) {
-                                   return mb_strtoupper($matches[1]);
-                               }, $property);
+        // Format Snake/Camel Case : get_my_property(...) / getMyProperty(...) / isMyProperty(...)
+        $camelCase =
+            preg_replace_callback(
+                '/(?:^|_)(.?)/',
+                function ($matches) {
+                    return mb_strtoupper($matches[1]);
+                },
+                $property
+            );
+        $methods = [sprintf('set%s', $camelCase),
+                    sprintf('set_%s', $property)];
 
-        // Format : setMyProperty(...)
-        if ($bReturn = $reflectionObject->hasMethod($setterCamelCase)) {
-            $reflectionObject->getMethod($setterCamelCase)->invoke($object, $value);
+        // Test different formats
+        foreach ($methods as $method) {
+            if ($reflectionObject->hasMethod($method) &&
+                $reflectionObject->getMethod($method)->isPublic()) {
+                $reflectionObject->getMethod($method)->invoke($object, $value);
 
-            return true;
+                return true;
+            }
         }
 
-        // Format : set_myproperty(...)
-        if ($bReturn = $reflectionObject->hasMethod('set_' . $property)) {
-            $reflectionObject->getMethod('set_' . $property)->invoke($object, $value);
+        // Test __call() method
+        if ($reflectionObject->hasMethod('__call')) {
+            foreach ($methods as $method) {
+                try {
+                    $reflectionObject->getMethod('__call')->invoke($object, $method, [$value]);
 
-            return true;
+                    return true;
+                } catch (\Error $e) {
+                }
+            }
         }
     }
 
@@ -938,8 +959,8 @@ function b_array_traverse($mixed, array $keys, &$exists = null, callable $callba
  * Difference between native array_merge_recursive() is that b_array_merge_recursive() do not merge strings values into
  * an array.
  *
- * @param array   $arraySrc  Array source
- * @param array[] ...$arrays Arrays to merge
+ * @param array   $arraySrc Array source
+ * @param array[] $arrays   Arrays to merge
  *
  * @return array
  */
