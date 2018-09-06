@@ -1246,7 +1246,7 @@ if (extension_loaded('gd')) {
  *
  * @return int
  */
-function b_size_from_ini(string $size): int
+function b_size_from_ini(string $size)
 {
     switch (mb_strtolower(substr($size, -1))) {
         case 'k':
@@ -1256,7 +1256,16 @@ function b_size_from_ini(string $size): int
         case 'g':
             return (int) substr($size, 0, -1) * 1024 * 1024 * 1024;
         default:
-            return intval($size);
+            switch (mb_strtolower(substr($size, -2))) {
+                case 'kb':
+                    return (int) substr($size, 0, -2) * 1024;
+                case 'mb':
+                    return (int) substr($size, 0, -2) * 1024 * 1024;
+                case 'gb':
+                    return (int) substr($size, 0, -2) * 1024 * 1024 * 1024;
+                default:
+                    return intval($size);
+            }
     }
 }
 
@@ -1264,12 +1273,12 @@ function b_size_from_ini(string $size): int
 /**
  * Get a human see file size.
  *
- * @param int $size
- * @param int $precision
+ * @param int|float $size
+ * @param int       $precision
  *
  * @return string
  */
-function b_human_file_size(int $size, int $precision = 2): string
+function b_human_file_size($size, int $precision = 2): string
 {
     $value = 0;
     $unit = "octets";
