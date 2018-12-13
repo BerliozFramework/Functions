@@ -754,6 +754,7 @@ function b_nl2p(string $str): string
  * @param bool   $exists   If property exists (passed by reference)
  *
  * @return mixed
+ * @throws \ReflectionException
  */
 function b_property_get($object, string $property, &$exists = null)
 {
@@ -822,6 +823,7 @@ function b_property_get($object, string $property, &$exists = null)
  * @param mixed  $value    Property value
  *
  * @return bool
+ * @throws \ReflectionException
  */
 function b_property_set($object, string $property, $value = null): bool
 {
@@ -886,6 +888,29 @@ function b_property_set($object, string $property, $value = null): bool
 // ARRAYS
 
 /**
+ * Is sequential array?
+ *
+ * @param array $array
+ *
+ * @return bool
+ */
+function b_is_sequential_array(array $array): bool
+{
+    if ($array === []) {
+        return true;
+    }
+
+    if (!array_key_exists(0, $array)) {
+        return false;
+    }
+
+    $keys = array_keys($array);
+    sort($keys);
+
+    return $keys === range(0, count($array) - 1);
+}
+
+/**
  * Traverse array with keys.
  *
  * @param mixed         $mixed    Source
@@ -895,6 +920,7 @@ function b_property_set($object, string $property, $value = null): bool
  *
  * @return mixed|null
  * @throws \InvalidArgumentException if first argument is not a traversable data
+ * @throws \ReflectionException
  */
 function b_array_traverse($mixed, array $keys, &$exists = null, callable $callback = null)
 {
@@ -967,16 +993,23 @@ function b_array_traverse($mixed, array $keys, &$exists = null, callable $callba
 function b_array_merge_recursive(array $arraySrc, array ...$arrays): array
 {
     foreach ($arrays as $array) {
+        if (b_is_sequential_array($arraySrc) || b_is_sequential_array($array)) {
+            $arraySrc = array_merge($arraySrc, $array);
+            continue;
+        }
+
         foreach ($array as $key => $value) {
-            if (!isset($arraySrc[$key])) {
+            if (!array_key_exists($key, $arraySrc)) {
                 $arraySrc[$key] = $value;
-            } else {
-                if (is_array($arraySrc[$key])) {
-                    $arraySrc[$key] = b_array_merge_recursive($arraySrc[$key], $value);
-                } else {
-                    $arraySrc[$key] = $value;
-                }
+                continue;
             }
+
+            if (is_array($arraySrc[$key]) && is_array($value)) {
+                $arraySrc[$key] = b_array_merge_recursive($arraySrc[$key], $value);
+                continue;
+            }
+
+            $arraySrc[$key] = $value;
         }
     }
 
