@@ -922,7 +922,7 @@ function b_is_sequential_array(array $array): bool
  * @throws \InvalidArgumentException if first argument is not a traversable data
  * @throws \ReflectionException
  */
-function b_array_traverse($mixed, array $keys, &$exists = null, callable $callback = null)
+function b_array_traverse(&$mixed, array $keys, &$exists = null, callable $callback = null)
 {
     if (!(is_array($mixed) || $mixed instanceof \Traversable || is_object($mixed))) {
         throw new InvalidArgumentException('First argument must be a traversable mixed data');
@@ -932,7 +932,7 @@ function b_array_traverse($mixed, array $keys, &$exists = null, callable $callba
 
     // Array or \Traversable ?
     if (is_array($mixed) || $mixed instanceof \Traversable) {
-        if (isset($mixed[$key])) {
+        if (array_key_exists($key, $mixed)) {
             if (count($keys) > 0) {
                 return b_array_traverse($mixed[$key], $keys, $exists, $callback);
             } else {
